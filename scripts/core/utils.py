@@ -6,10 +6,13 @@ class shared:
 def get_component_names():
   components_list = [
     'glo_sdcn_process_mode',
-    'v2v_file', 'v2v_width', 'v2v_height', 'v2v_prompt', 'v2v_n_prompt', 'v2v_cfg_scale', 'v2v_seed', 'v2v_processing_strength', 'v2v_fix_frame_strength', 
-    'v2v_sampler_index', 'v2v_steps', 'v2v_override_settings',
+    'v2v_file', 'v2v_width', 'v2v_height', 'v2v_prompt', 'v2v_n_prompt', 'v2v_cfg_scale', 'v2v_seed', 'v2v_processing_strength', 'v2v_fix_frame_strength',
+    'v2v_sampler_index', 'v2v_steps',
+    'v2v_mask_prompt', 'v2v_mask_negative_prompt',
+    'v2v_override_settings',
     'v2v_occlusion_mask_blur', 'v2v_occlusion_mask_trailing', 'v2v_occlusion_mask_flow_multiplier', 'v2v_occlusion_mask_difo_multiplier', 'v2v_occlusion_mask_difs_multiplier',
     'v2v_step_1_processing_mode', 'v2v_step_1_blend_alpha', 'v2v_step_1_seed', 'v2v_step_2_seed',
+    'v2v_frame_skip',
     't2v_file','t2v_init_image', 't2v_width', 't2v_height', 't2v_prompt', 't2v_n_prompt', 't2v_cfg_scale', 't2v_seed', 't2v_processing_strength', 't2v_fix_frame_strength',
     't2v_sampler_index', 't2v_steps', 't2v_length', 't2v_fps', 't2v_cn_frame_send',
     'glo_save_frames_check'
@@ -30,7 +33,7 @@ def args_to_dict(*args): # converts list of argumets into dictionary for better 
     'v2v_init_video': None, # Always required
 
     'v2v_steps': 15,
-    'v2v_sampler_index': 0, # 'Euler a'    
+    'v2v_sampler_index': 0, # 'Euler a'
     'v2v_mask_blur': 0,
 
     'v2v_inpainting_fill': 1, # original
@@ -55,6 +58,9 @@ def args_to_dict(*args): # converts list of argumets into dictionary for better 
     'v2v_inpaint_full_res': True,
     'v2v_inpaint_full_res_padding': 0,
     'v2v_inpainting_mask_invert': False,
+    'v2v_frame_skip': 1,
+    'v2v_mask_prompt': '',
+    'v2v_mask_negative_prompt': '',
 
     # text to video params
     't2v_mode': 4,
@@ -65,7 +71,7 @@ def args_to_dict(*args): # converts list of argumets into dictionary for better 
     't2v_mask_img': None,
 
     't2v_steps': 15,
-    't2v_sampler_index': 0, # 'Euler a'    
+    't2v_sampler_index': 0, # 'Euler a'
     't2v_mask_blur': 0,
 
     't2v_inpainting_fill': 1, # original
@@ -101,7 +107,7 @@ def args_to_dict(*args): # converts list of argumets into dictionary for better 
 
   for i in range(len(args_list)):
     if (args[i] is None) and (args_list[i] in args_dict):
-      #args[i] = args_dict[args_list[i]] 
+      #args[i] = args_dict[args_list[i]]
       pass
     else:
       args_dict[args_list[i]] = args[i]
@@ -139,7 +145,7 @@ def get_time_left(ind, length, processing_start_time):
 
 import numpy as np
 from PIL import Image, ImageOps, ImageFilter, ImageEnhance, ImageChops
-from types import SimpleNamespace  
+from types import SimpleNamespace
 
 from modules.generation_parameters_copypaste import create_override_settings_dict
 from modules.processing import Processed, StableDiffusionProcessingImg2Img, StableDiffusionProcessingTxt2Img, process_images
@@ -218,7 +224,7 @@ def process_img(p, input_img, output_dir, inpaint_mask_dir, args):
 
     return generated_images
 
-def img2img(args_dict):  
+def img2img(args_dict):
     args = SimpleNamespace(**args_dict)
     override_settings = create_override_settings_dict(args.override_settings)
 
@@ -303,7 +309,7 @@ def img2img(args_dict):
 
     if mask:
         p.extra_generation_params["Mask blur"] = args.mask_blur
-    
+
     '''
     if is_batch:
         ...
@@ -332,7 +338,7 @@ def img2img(args_dict):
     #print(generation_info_js, plaintext_to_html(processed.info), plaintext_to_html(processed.comments))
     return generated_images, generation_info_js, plaintext_to_html(processed.info), plaintext_to_html(processed.comments)
 
-def txt2img(args_dict):  
+def txt2img(args_dict):
     args = SimpleNamespace(**args_dict)
     override_settings = create_override_settings_dict(args.override_settings)
 
@@ -408,7 +414,7 @@ def export_settings(*args):
   else:
     msg = f"Unsupported processing mode: '{args[0]}'"
     raise Exception(msg)
-  
+
   # convert CN params into a readable dict
   cn_remove_list = ['low_vram', 'is_ui', 'input_mode', 'batch_images', 'output_dir', 'loopback', 'image']
 
@@ -420,12 +426,12 @@ def export_settings(*args):
         for key in cn_remove_list:
           if key in cn_values_dict: del cn_values_dict[key]
         args_dict['ControlNets'].append(cn_values_dict)
-  
+
   # remove unimportant values
   remove_list = ['save_frames_check', 'restore_faces', 'prompt_styles', 'mask_blur', 'inpainting_fill', 'tiling', 'n_iter', 'batch_size', 'subseed', 'subseed_strength', 'seed_resize_from_h', \
                  'seed_resize_from_w', 'seed_enable_extras', 'resize_mode', 'inpaint_full_res', 'inpaint_full_res_padding', 'inpainting_mask_invert', 'file', 'denoising_strength', \
                  'override_settings', 'script_inputs', 'init_img', 'mask_img', 'mode', 'init_video']
-  
+
   for key in remove_list:
     if key in args_dict: del args_dict[key]
 
