@@ -22,7 +22,7 @@ import time
 import skimage
 import datetime
 
-import masking
+import scripts.masking
 
 from scripts.core.flow_utils import RAFT_estimate_flow, RAFT_clear_memory, compute_diff_map
 from scripts.core import utils
@@ -260,7 +260,7 @@ def start_process(*args):
         # TODO: convert args_dict into separate dict that stores only params necessery for img2img processing
         img2img_args_dict = args_dict #copy.deepcopy(args_dict)
         img2img_args_dict['denoising_strength'] = args_dict['processing_strength']
-        if args_dict['step_1_processing_mode'] == 0: # Process full image then blend in occlusions
+        if args_dict[''] == 0: # Process full image then blend in occlusions
           if frame_mask is not None:
             img2img_args_dict['mode'] = 4
             img2img_args_dict['mask_img'] = frame_mask
